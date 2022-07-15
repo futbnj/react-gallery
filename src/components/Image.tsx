@@ -5,9 +5,14 @@ const ImageComponent = ({url, width, height, windowWidth, preloader}: ImageProps
 
     const imageRef = useRef<HTMLImageElement>(null);
 
-    let coefficient = 0.015;
+    let coefficient = 0.025;
     if (windowWidth < 580) {
         coefficient = 0.065;
+    }
+
+    let flexValue = windowWidth*coefficient;
+    if (windowWidth > 880) {
+        flexValue = 17;
     }
 
     const handlePreload = () => {
@@ -22,8 +27,8 @@ const ImageComponent = ({url, width, height, windowWidth, preloader}: ImageProps
 
     const style = {
         flex: (width >= height)
-              ? `1 1 ${windowWidth*coefficient > 35 ? 35 : windowWidth*coefficient}%`
-              : `1 1 ${windowWidth*coefficient/2 > 25 ? 25 : windowWidth*coefficient/2}%`,
+              ? `1 1 ${flexValue > 35 ? 35 : flexValue}%`
+              : `1 1 ${flexValue/2 > 25 ? 25 : flexValue/2}%`,
     };
 
     return (

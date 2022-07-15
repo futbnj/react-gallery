@@ -12,7 +12,7 @@ const Loader = (): JSX.Element => {
     const [value, setValue] = useState<string>('');
     const [data, setData] = useState<{url: string, width: number, height: number}[]>();
     const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
-    const preloader =  require("../images/preloader.svg") as string
+    const preloader =  require("../images/preloader.svg");
 
     const handleInput = (event: React.ChangeEvent<HTMLInputElement>) : void => {
         const inputTarget = event.target as HTMLInputElement;
