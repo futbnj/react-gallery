@@ -1,7 +1,7 @@
 import React, {useRef} from "react";
-import {ImageProps} from "./image.props";
+import {ImageCardProps} from "./ImageCard.props";
 
-const ImageComponent = ({url, width, height, windowWidth, preloader}: ImageProps): JSX.Element => {
+const ImageCard = ({url, width, height, windowWidth, preloader}: ImageCardProps ): JSX.Element => {
 
     const imageRef = useRef<HTMLImageElement>(null);
 
@@ -38,4 +38,4 @@ const ImageComponent = ({url, width, height, windowWidth, preloader}: ImageProps
     )
 }
 
-export default ImageComponent;
+export default ImageCard;

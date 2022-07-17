@@ -1,4 +1,4 @@
-export interface ImageProps {
+export interface ImageCardProps {
     url: string;
     width: number;
     height: number;

@@ -1,23 +1,15 @@
-import React, {EventHandler, useEffect, useState} from 'react';
-import ImageComponent from "./Image";
-
-type DataProps = {
-    url: string,
-    width: number,
-    height: number
-}
+import React, {useState} from 'react';
+import {DataProps} from "../../App";
+import {LoaderProps} from "./Loader.props";
 
 type ImageProps = {
     width: number,
     height: number
 }
 
-const Loader = (): JSX.Element => {
-    const preloader =  require("../images/preloader.svg");
+const Loader = ({setData} : LoaderProps) : JSX.Element => {
 
     const [value, setValue] = useState<string>('');
-    const [data, setData] = useState<{url: string, width: number, height: number}[]>();
-    const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
     const [drag, setDrag] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
 
@@ -37,12 +29,11 @@ const Loader = (): JSX.Element => {
         if (!isJSONUrl(value)) {
             handleImageProcess(value)
                 .then((img: ImageProps) : void | PromiseLike<void> => {
-                    console.log('resolved')
                     let dataObject: DataProps[] = [{url: '', width: 0, height: 0}];
                     dataObject[0].width = img.width;
                     dataObject[0].height = img.height;
                     dataObject[0].url = value;
-                    setData((prevData): DataProps[] => {
+                    setData((prevData: DataProps[]): DataProps[] => {
                         return (typeof prevData !== 'undefined') ? prevData?.concat(dataObject) : dataObject;
                     })
                 })
@@ -52,7 +43,7 @@ const Loader = (): JSX.Element => {
         } else {
             const response = await fetch(value);
             const json = await response.json();
-            setData((prevData): DataProps[] => {
+            setData((prevData: DataProps[]): DataProps[] => {
                 return (typeof prevData !== 'undefined') ? prevData.concat(json['galleryImages']) : json['galleryImages'];
             })
         }
@@ -82,7 +73,6 @@ const Loader = (): JSX.Element => {
 
         const files = [...e.dataTransfer.files];
         files.forEach(file => {
-            console.log(file.type);
             if (file.type === "image/jpeg" || file.type === "image/png") {
                 const fileReader = new FileReader();
                 fileReader.readAsDataURL(file);
@@ -94,7 +84,7 @@ const Loader = (): JSX.Element => {
                                 dataObject[0].width = img.width;
                                 dataObject[0].height = img.height;
                                 dataObject[0].url = e.target?.result  as string;
-                                setData((prevData): DataProps[] => {
+                                setData((prevData: DataProps[]): DataProps[] => {
                                     return (typeof prevData !== 'undefined') ? prevData?.concat(dataObject) : dataObject;
                                 })
                             })
@@ -109,7 +99,7 @@ const Loader = (): JSX.Element => {
                 fileReader.onload = e => {
                     if ( typeof e.target?.result !== 'undefined') {
                         const fileContents = JSON.parse(e.target?.result as string)
-                        setData((prevData): DataProps[] => {
+                        setData((prevData: DataProps[]): DataProps[] => {
                             return (typeof prevData) !== 'undefined' ? prevData?.concat(fileContents['galleryImages']) : fileContents['galleryImages'];
                         })
                     }
@@ -133,12 +123,7 @@ const Loader = (): JSX.Element => {
         return /\.(json)$/.test(url);
     }
 
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        }
-        window.addEventListener('resize', handleResize);
-    })
+
 
 
     const handleSubmitByEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -149,40 +134,33 @@ const Loader = (): JSX.Element => {
 
     return (
         <>
-            <div className="loader">
-                <input
-                    className="loader__input"
-                    type="url"
-                    value={value}
-                    onChange={handleInput}
-                    onSubmit={handleSubmit}
-                    onKeyPress={(e) => handleSubmitByEnter(e)}
-                    onDrop={(e) => handleDrop(e)}
-                    onDragStart={(e) => handleDragStart(e)}
-                    onDragOver={(e) => handleDragStart(e)}
-                    onDragLeave={(e) => handleDragLeave(e)}
-                    placeholder=
-                        {
-                            drag
-                            ? 'Drop file(s) to upload images'
-                            : 'Drag file(s) or insert a url to upload images. Supported file formats: *.json, *.jpg, *.jpeg, *.png.'
-                        }
-                />
-                <button className="loader__button" onClick={handleSubmit}>Submit</button>
-                <button className="loader__button" onClick={clearData}>Clear</button>
-            </div>
+            <section className="sticky">
+                <div className="loader">
+                    <input
+                        className="loader__input"
+                        type="url"
+                        value={value}
+                        onChange={handleInput}
+                        onSubmit={handleSubmit}
+                        onKeyPress={(e) => handleSubmitByEnter(e)}
+                        onDrop={(e) => handleDrop(e)}
+                        onDragStart={(e) => handleDragStart(e)}
+                        onDragOver={(e) => handleDragStart(e)}
+                        onDragLeave={(e) => handleDragLeave(e)}
+                        placeholder=
+                            {
+                                drag
+                                    ? 'Drop file(s) to upload images'
+                                    : 'Drag file(s) or insert a url to upload images. Supported file formats: *.json, *.jpg, *.jpeg, *.png.'
+                            }
+                    />
+                    <button className="loader__button" onClick={handleSubmit}>Submit</button>
+                    <button className="loader__button" onClick={clearData}>Clear</button>
+                </div>
+            </section>
             <div className="error">
                 {
                     error !== '' ? error : ''
-                }
-            </div>
-            <div className="gallery">
-                {
-                    data?.map((element, index) => {
-                        return (
-                            <ImageComponent width={element.width} height={element.height} url={element.url} key={index} windowWidth={windowWidth} preloader={preloader}/>
-                        )
-                    })
                 }
             </div>
         </>
