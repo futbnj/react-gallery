@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {EventHandler, useEffect, useState} from 'react';
 import ImageComponent from "./Image";
 
 type DataProps = {
@@ -18,7 +18,8 @@ const Loader = (): JSX.Element => {
     const [value, setValue] = useState<string>('');
     const [data, setData] = useState<{url: string, width: number, height: number}[]>();
     const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
-    const [drag, setDrag] = useState(false);
+    const [drag, setDrag] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
 
     const handleInput = (event: React.ChangeEvent<HTMLInputElement>) : void => {
         const inputTarget = event.target as HTMLInputElement;
@@ -26,23 +27,32 @@ const Loader = (): JSX.Element => {
     }
 
     const handleSubmit = async () : Promise<Promise<() => void> | Promise<void>> => {
-        if (value.length === 0) return;
-        if (value.substring(value.lastIndexOf('.') + 1) !== 'json') {
-            let dataObject: DataProps[] = [{url: '', width: 0, height: 0}];
-            const img = new Image();
-            img.src = value;
-            img.onload = function() {
-                dataObject[0].width = img.naturalWidth;
-                dataObject[0].height = img.naturalHeight;
-                dataObject[0].url = value;
-                setData((prevData): DataProps[] | undefined => {
-                        return (typeof prevData !== 'undefined') ? prevData.concat(dataObject) : dataObject;
+        if (value.length === 0) {
+            setError('');
+            return;
+        };
+
+        setError('');
+
+        if (!isJSONUrl(value)) {
+            handleImageProcess(value)
+                .then((img: ImageProps) : void | PromiseLike<void> => {
+                    console.log('resolved')
+                    let dataObject: DataProps[] = [{url: '', width: 0, height: 0}];
+                    dataObject[0].width = img.width;
+                    dataObject[0].height = img.height;
+                    dataObject[0].url = value;
+                    setData((prevData): DataProps[] => {
+                        return (typeof prevData !== 'undefined') ? prevData?.concat(dataObject) : dataObject;
+                    })
                 })
-            };
+                .catch(() => {
+                    setError('Please enter a valid url string.');
+                })
         } else {
             const response = await fetch(value);
             const json = await response.json();
-            setData((prevData): DataProps[] | undefined => {
+            setData((prevData): DataProps[] => {
                 return (typeof prevData !== 'undefined') ? prevData.concat(json['galleryImages']) : json['galleryImages'];
             })
         }
@@ -51,6 +61,7 @@ const Loader = (): JSX.Element => {
     const clearData = (): void => {
         setData([]);
         setValue('');
+        setError('');
     }
 
     const handleDragStart = (e: React.DragEvent<HTMLInputElement>) => {
@@ -67,37 +78,44 @@ const Loader = (): JSX.Element => {
         e.preventDefault();
 
         setDrag(false);
+        setError('');
 
         const files = [...e.dataTransfer.files];
         files.forEach(file => {
-            if (file.type === "image/jpeg") {
+            console.log(file.type);
+            if (file.type === "image/jpeg" || file.type === "image/png") {
                 const fileReader = new FileReader();
                 fileReader.readAsDataURL(file);
                 fileReader.onload = e => {
                     if ( typeof e.target?.result !== 'undefined') {
-                        handleImageProcess(e.target?.result  as string).then((img: ImageProps) : void | PromiseLike<void> => {
-                            let dataObject: DataProps[] = [{url: '', width: 0, height: 0}];
-                            dataObject[0].width = img.width;
-                            dataObject[0].height = img.height;
-                            dataObject[0].url = e.target?.result  as string;
-                            setData((prevData): DataProps[] | undefined => {
-                                return (typeof prevData !== 'undefined') ? prevData?.concat(dataObject) : dataObject;
+                        handleImageProcess(e.target?.result  as string)
+                            .then((img: ImageProps) : void | PromiseLike<void> => {
+                                let dataObject: DataProps[] = [{url: '', width: 0, height: 0}];
+                                dataObject[0].width = img.width;
+                                dataObject[0].height = img.height;
+                                dataObject[0].url = e.target?.result  as string;
+                                setData((prevData): DataProps[] => {
+                                    return (typeof prevData !== 'undefined') ? prevData?.concat(dataObject) : dataObject;
+                                })
                             })
-                        })
+                            .catch(() => {
+                                setError('An error occurred when uploading a file.')
+                            })
                     }
                 };
-            }
-            if (file.type === "application/json") {
+            } else if (file.type === "application/json") {
                 const fileReader = new FileReader();
                 fileReader.readAsText(file);
                 fileReader.onload = e => {
                     if ( typeof e.target?.result !== 'undefined') {
                         const fileContents = JSON.parse(e.target?.result as string)
-                        setData((prevData): DataProps[] | undefined => {
+                        setData((prevData): DataProps[] => {
                             return (typeof prevData) !== 'undefined' ? prevData?.concat(fileContents['galleryImages']) : fileContents['galleryImages'];
                         })
                     }
                 };
+            } else {
+                setError('Files of such format are not supported. Supported file formats: *.json, *.jpg, *.jpeg, *.png.');
             }
         })
     }
@@ -111,6 +129,10 @@ const Loader = (): JSX.Element => {
         })
     }
 
+    const isJSONUrl = (url: string): boolean => {
+        return /\.(json)$/.test(url);
+    }
+
     useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
@@ -118,6 +140,12 @@ const Loader = (): JSX.Element => {
         window.addEventListener('resize', handleResize);
     })
 
+
+    const handleSubmitByEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    }
 
     return (
         <>
@@ -128,14 +156,25 @@ const Loader = (): JSX.Element => {
                     value={value}
                     onChange={handleInput}
                     onSubmit={handleSubmit}
+                    onKeyPress={(e) => handleSubmitByEnter(e)}
                     onDrop={(e) => handleDrop(e)}
                     onDragStart={(e) => handleDragStart(e)}
                     onDragOver={(e) => handleDragStart(e)}
                     onDragLeave={(e) => handleDragLeave(e)}
-                    placeholder={drag ? 'Отпустите файл чтобы загрузить изображения' : 'Перетащите файл или вставьте ссылку'}
+                    placeholder=
+                        {
+                            drag
+                            ? 'Drop file(s) to upload images'
+                            : 'Drag file(s) or insert a url to upload images. Supported file formats: *.json, *.jpg, *.jpeg, *.png.'
+                        }
                 />
                 <button className="loader__button" onClick={handleSubmit}>Submit</button>
                 <button className="loader__button" onClick={clearData}>Clear</button>
+            </div>
+            <div className="error">
+                {
+                    error !== '' ? error : ''
+                }
             </div>
             <div className="gallery">
                 {
