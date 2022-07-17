@@ -123,9 +123,6 @@ const Loader = ({setData} : LoaderProps) : JSX.Element => {
         return /\.(json)$/.test(url);
     }
 
-
-
-
     const handleSubmitByEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSubmit();
@@ -134,10 +131,10 @@ const Loader = ({setData} : LoaderProps) : JSX.Element => {
 
     return (
         <>
-            <section className="sticky">
-                <div className="loader">
+            <section className="loader">
+                <div className="loader__input">
                     <input
-                        className="loader__input"
+                        className="loader__input_input"
                         type="url"
                         value={value}
                         onChange={handleInput}
@@ -154,15 +151,15 @@ const Loader = ({setData} : LoaderProps) : JSX.Element => {
                                     : 'Drag file(s) or insert a url to upload images. Supported file formats: *.json, *.jpg, *.jpeg, *.png.'
                             }
                     />
-                    <button className="loader__button" onClick={handleSubmit}>Submit</button>
-                    <button className="loader__button" onClick={clearData}>Clear</button>
+                    <span className="loader__input_error">
+                        {
+                            error !== '' ? error : ''
+                        }
+                    </span>
                 </div>
+                <button className="loader__button" onClick={handleSubmit}>Submit</button>
+                <button className="loader__button" onClick={clearData}>Clear</button>
             </section>
-            <div className="error">
-                {
-                    error !== '' ? error : ''
-                }
-            </div>
         </>
     )
 }
